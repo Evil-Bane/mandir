@@ -11,7 +11,7 @@ void main() {
       if (settings.name == '/gen') {
         final String index = settings.arguments as String;
         return MaterialPageRoute(
-          builder: (context) => generation(index),
+          builder: (context) => Generation(index),
         );
       } else if (settings.name == '/select') {
         return MaterialPageRoute(builder: (context) => const selection());

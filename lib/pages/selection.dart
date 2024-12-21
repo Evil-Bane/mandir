@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mandir/pages/generation.dart';
 
 class selection extends StatefulWidget {
   const selection({super.key});
@@ -15,29 +14,29 @@ class _selectionState extends State<selection> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Select Wallpaper", style: TextStyle(color: Colors.white,)),
-        backgroundColor: Colors.grey,
+        backgroundColor: Colors.orangeAccent,
       ),
       body: Padding(
         padding: EdgeInsets.only(top: 50,left: 20, right: 20),
         child: GridView.builder(gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 20, mainAxisSpacing: 20),
-    itemCount: 6,
-    itemBuilder: (context, index){
-    return GestureDetector(
-    onTap: () {
-    Navigator.pushNamed(context, "/gen", arguments: images[index].toString());
-    },
-    child: Container(
-    decoration: BoxDecoration(
-    color: Colors.grey[300],
-      borderRadius: BorderRadius.circular(50),
-    ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(50),
-        child: Image.asset(images[index], fit: BoxFit.cover,),
-      ),
-    )
-    );
-    },
+          itemCount: 6,
+          itemBuilder: (context, index){
+            return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, "/gen", arguments: images[index].toString());
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: Image.asset(images[index], fit: BoxFit.cover,),
+                  ),
+                )
+            );
+          },
         ),
       ),
     );

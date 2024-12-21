@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:widgets_to_image/widgets_to_image.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
-class generation extends StatefulWidget {
+class Generation extends StatefulWidget {
   final String imagePath;
-  const generation(this.imagePath, {super.key});
+  const Generation(this.imagePath, {Key? key}) : super(key: key);
 
   @override
-  State<generation> createState() => _generationState();
+  State<Generation> createState() => _GenerationState();
 }
 
-class _generationState extends State<generation> {
-  // GlobalKey for converting the widget to a PNG
-  final GlobalKey _globalKey = GlobalKey();
+class _GenerationState extends State<Generation> {
+  final WidgetsToImageController _controller = WidgetsToImageController();
   final ImagePicker _picker = ImagePicker();
-  XFile? _selectedImage; // Store the image picked from the gallery
+  XFile? _selectedImage;
+  Uint8List? _capturedImageBytes;
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -23,81 +28,143 @@ class _generationState extends State<generation> {
       });
     }
   }
+  Future<void> _saveImage(Uint8List? _capturedImageBytes) async {
+    if (_capturedImageBytes == null) return; // Handle null case
+    await Permission.storage.request();
+    final result = await ImageGallerySaverPlus.saveImage(_capturedImageBytes);
+    print(result);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Generate Image",
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.grey,
+        title: const Text("Generate Image"),
+        backgroundColor: Colors.orangeAccent,
       ),
       body: SingleChildScrollView(
-        child: RepaintBoundary(
-          key: _globalKey, // Key for capturing the widget
           child: Column(
             children: [
-              // Stack to overlay "Add Photo" button on the image and text field
-              Stack(
-                children: [
-                  // Image display
-                  Container(
-                    height: 550,
-                    width: double.infinity,
-                    child: Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                  // Add Photo button
-                  Positioned(
-                    bottom: 20, // Adjust for overlap with text field
-                    right: 10,
-                    child: ElevatedButton(
-                      onPressed: _pickImage, // Open gallery on click
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        padding: EdgeInsets.zero,
-                        fixedSize: Size(50, 50), // Square button
+              WidgetsToImage(
+                controller: _controller,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      height: 550,
+                      width: double.infinity,
+                      child: Image.asset(
+                        widget.imagePath,
+                        fit: BoxFit.fill,
                       ),
-                      child: Icon(Icons.add_a_photo, size: 24),
                     ),
-                  ),
-                ],
-              ),
-              // Name TextField (strap)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: "Enter your name",
-                    border: OutlineInputBorder(),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 500),
+                      child: TextField(
+                        decoration: const InputDecoration(
+                            hintText: "Enter your name",
+                            filled: true,
+                            fillColor: Colors.black
+                        ),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'RubikWetPaint'
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 5,
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              color: Colors.grey[300],
+                              child: _selectedImage == null
+                                  ? Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.grey[600],
+                                ),
+                              )
+                                  : Image.file(
+                                File(_selectedImage!.path),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 20),
-              // "Generate Photo" button
-              SizedBox(
-                width: double.infinity,
-                height: 60,
+
+
+              const SizedBox(height: 20),
+              if (_capturedImageBytes != null)
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Image.memory(
+                    _capturedImageBytes!,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _pickImage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  _selectedImage == null
+                      ? "Add Photo"
+                      : "Replace Photo",
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Add your generate PNG logic here
+                  onPressed: () async {
+                    try {
+                      // Capture the widget as an image
+                      _capturedImageBytes = await _controller.capture();
+                      if (_capturedImageBytes != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Image Saved successfully in your Gallery!')),
+                        );
+                        _saveImage(_capturedImageBytes);
+
+                        setState(() {}); // Refresh UI to display the captured image
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Failed to capture image.')),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error capturing image: $e')),
+                      );
+                    }
                   },
-                  child: Text("Generate Photo"),
+                  child: const Text("Generate Photo"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orangeAccent,
                     foregroundColor: Colors.blue,
                   ),
+
                 ),
               ),
             ],
           ),
-        ),
       ),
     );
   }
