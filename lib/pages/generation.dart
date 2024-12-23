@@ -15,6 +15,7 @@ class Generation extends StatefulWidget {
 }
 
 class _GenerationState extends State<Generation> {
+  final FocusNode _textFieldFocusNode = FocusNode();
   final WidgetsToImageController _controller = WidgetsToImageController();
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
@@ -31,8 +32,7 @@ class _GenerationState extends State<Generation> {
   Future<void> _saveImage(Uint8List? _capturedImageBytes) async {
     if (_capturedImageBytes == null) return; // Handle null case
     await Permission.storage.request();
-    final result = await ImageGallerySaverPlus.saveImage(_capturedImageBytes);
-    print(result);
+    await ImageGallerySaverPlus.saveImage(_capturedImageBytes);
   }
 
   @override
@@ -42,8 +42,7 @@ class _GenerationState extends State<Generation> {
         title: const Text("Generate Image"),
         backgroundColor: Colors.orangeAccent,
       ),
-      body: SingleChildScrollView(
-          child: Column(
+      body: Column(
             children: [
               WidgetsToImage(
                 controller: _controller,
@@ -61,6 +60,7 @@ class _GenerationState extends State<Generation> {
                     Padding(
                       padding: const EdgeInsets.only(top: 500),
                       child: TextField(
+                        focusNode: _textFieldFocusNode,
                         decoration: const InputDecoration(
                             hintText: "Enter your name",
                             filled: true,
@@ -74,7 +74,7 @@ class _GenerationState extends State<Generation> {
                     ),
                     Positioned(
                       bottom: 0,
-                      right: 5,
+                      right: 10,
                       child: Column(
                         children: [
                           ClipRRect(
@@ -105,67 +105,71 @@ class _GenerationState extends State<Generation> {
               ),
 
 
-              const SizedBox(height: 20),
               if (_capturedImageBytes != null)
                 Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.only(right: 10, bottom: 0),
                   child: Image.memory(
                     _capturedImageBytes!,
                     fit: BoxFit.cover,
                   ),
                 ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _pickImage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black54,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              Padding(
+                padding: const EdgeInsets.only(left: 255,),
+                child: ElevatedButton(
+                  onPressed: _pickImage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
-                ),
-                child: Text(
-                  _selectedImage == null
-                      ? "Add Photo"
-                      : "Replace Photo",
-                  style: const TextStyle(color: Colors.white),
+                  child: Text(
+                    _selectedImage == null
+                        ? "Add Photo"
+                        : "Replace Photo",
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      // Capture the widget as an image
-                      _capturedImageBytes = await _controller.capture();
-                      if (_capturedImageBytes != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Image Saved successfully in your Gallery!')),
-                        );
-                        _saveImage(_capturedImageBytes);
+              Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          _textFieldFocusNode.unfocus();
+                          // Capture the widget as an image
+                          _capturedImageBytes = await _controller.capture();
+                          if (_capturedImageBytes != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Image Saved successfully in your Gallery!')),
+                            );
+                            _saveImage(_capturedImageBytes);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to capture image.')),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error capturing image: $e')),
+                          );
+                        }
+                      },
+                      child: const Text("Generate Photo"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
+                        foregroundColor: Colors.blue,
+                      ),
 
-                        setState(() {}); // Refresh UI to display the captured image
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Failed to capture image.')),
-                        );
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error capturing image: $e')),
-                      );
-                    }
-                  },
-                  child: const Text("Generate Photo"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    foregroundColor: Colors.blue,
+                    ),
                   ),
-
-                ),
               ),
             ],
           ),
-      ),
     );
   }
 }
